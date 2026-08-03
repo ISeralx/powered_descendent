@@ -246,9 +246,9 @@ function sample(tr,t){
 }
 const throttleFrac=Tn=>Math.max(0,Math.min(1,(Tn-P.rho_min)/(P.rho_max-P.rho_min)));
 
-const WD=2120,HD=1660;
+const WD=2950,HD=1620;
 function mapper(w,h){
-  const ml=54,mr=24,mt=26,mb=40;
+  const ml=54,mr=30,mt=26,mb=40;
   const s=Math.min((w-ml-mr)/WD,(h-mt-mb)/HD);
   const ox=ml+((w-ml-mr)-WD*s)/2, oy=h-mb-((h-mt-mb)-HD*s)/2;
   return {sx:d=>ox+d*s,sy:a=>oy-a*s,s};
@@ -296,33 +296,31 @@ function drawView(){
   ctx.fillStyle=C.dim;ctx.font='10px ui-monospace,Menlo,monospace';ctx.textAlign='center';ctx.fillText('LZ',px,py+18);
 
   const rx=M.sx(now.dr),ry=M.sy(now.alt);
-  const ang=Math.atan2(-now.Tv,now.Th), frac=throttleFrac(now.Tn), landed=time>=traj.tf-0.05;
+  const frac=throttleFrac(now.Tn), landed=time>=traj.tf-0.05;
+  const tilt=Math.atan2(now.Th,now.Tv);          // gimbal angle off local vertical (≤40°)
 
-  // gimbal (pointing) cone — allowed thrust within 40deg of local vertical
+  // gimbal cone — subtle outline around vertical (thrust must stay within 40°)
   if(showCones && !landed){
-    const up=-Math.PI/2, gp=P.gamma_p*Math.PI/180, R=50;
-    ctx.fillStyle='rgba(244,245,246,.06)';ctx.beginPath();ctx.moveTo(rx,ry);ctx.arc(rx,ry,R,up-gp,up+gp);ctx.closePath();ctx.fill();
-    ctx.strokeStyle='rgba(244,245,246,.2)';ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx+R*Math.cos(up-gp),ry+R*Math.sin(up-gp));
-    ctx.moveTo(rx,ry);ctx.lineTo(rx+R*Math.cos(up+gp),ry+R*Math.sin(up+gp));ctx.stroke();
+    const up=-Math.PI/2, gp=P.gamma_p*Math.PI/180, R=48;
+    ctx.strokeStyle='rgba(244,245,246,.14)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(rx+R*Math.cos(up-gp),ry+R*Math.sin(up-gp));ctx.lineTo(rx,ry);
+    ctx.lineTo(rx+R*Math.cos(up+gp),ry+R*Math.sin(up+gp));ctx.stroke();
+    ctx.beginPath();ctx.arc(rx,ry,R,up-gp,up+gp);ctx.stroke();
   }
 
-  ctx.save();ctx.translate(rx,ry);ctx.rotate(ang);
+  ctx.save();ctx.translate(rx,ry);ctx.rotate(tilt);
   if(!landed){
-    const fl=8+frac*30+(REDUCE?0:Math.random()*4);
-    const g=ctx.createLinearGradient(-11,0,-11-fl,0);
-    g.addColorStop(0,'rgba(255,244,190,.95)');g.addColorStop(.35,'rgba(255,138,42,.9)');g.addColorStop(1,'rgba(255,70,30,0)');
-    ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(-10,-4.3);ctx.lineTo(-11-fl,0);ctx.lineTo(-10,4.3);ctx.closePath();ctx.fill();
+    const fl=7+frac*20+(REDUCE?0:Math.random()*3);
+    const g=ctx.createLinearGradient(0,9,0,9+fl);
+    g.addColorStop(0,'rgba(255,246,200,.95)');g.addColorStop(.4,'rgba(255,138,42,.9)');g.addColorStop(1,'rgba(255,70,30,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(-3.2,9);ctx.lineTo(0,9+fl);ctx.lineTo(3.2,9);ctx.closePath();ctx.fill();
   }
-  ctx.fillStyle='#E7E9ED';ctx.strokeStyle='#9296a0';ctx.lineWidth=1;
-  ctx.beginPath();ctx.moveTo(13,0);ctx.lineTo(4,-4.6);ctx.lineTo(-10,-4.6);ctx.lineTo(-10,4.6);ctx.lineTo(4,4.6);ctx.closePath();ctx.fill();ctx.stroke();
-  ctx.fillStyle='#2A2C33';ctx.fillRect(-10,-4.6,3.6,9.2);
+  // upright booster, nose up
+  ctx.fillStyle='#E7E9ED';ctx.strokeStyle='#8E93A0';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,-15);ctx.lineTo(3,-9);ctx.lineTo(3,8);ctx.lineTo(-3,8);ctx.lineTo(-3,-9);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='#2A2C33';ctx.fillRect(-3,8,6,2.4);
+  ctx.fillStyle='rgba(120,124,134,.7)';ctx.fillRect(-3,-2,6,1.1);
   ctx.restore();
-
-  if(showCones && !landed){
-    const R=50*Math.max(.35,frac);
-    ctx.strokeStyle=C.amber;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx+Math.cos(ang)*R,ry+Math.sin(ang)*R);ctx.stroke();
-  }
 }
 
 function drawTTL(){
